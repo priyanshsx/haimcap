@@ -652,7 +652,8 @@ export default function NexusTerminal() {
     // 1. Fetch Initial Data
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/data");
+        const API_BASE = window.location.hostname === "localhost" ? "http://localhost:8000" : "";
+        const response = await axios.get(`${API_BASE}/api/data`);
         if (response.data.error) {
           setError(response.data.error);
         } else {
@@ -664,17 +665,19 @@ export default function NexusTerminal() {
 
         // Fetch new Sentiment APIs concurrently
         try {
+          const API_BASE = window.location.hostname === "localhost" ? "http://localhost:8000" : "";
           const [scoresRes, fundsRes, signalsRes] = await Promise.all([
-            axios.get("http://localhost:8000/api/sentiment/scores"),
-            axios.get("http://localhost:8000/api/sentiment/funds"),
-            axios.get("http://localhost:8000/api/sentiment/signals")
+            axios.get(`${API_BASE}/api/sentiment/scores`),
+            axios.get(`${API_BASE}/api/sentiment/funds`),
+            axios.get(`${API_BASE}/api/sentiment/signals`)
           ]);
           setSentimentScores(scoresRes.data);
           setSentimentFunds(fundsRes.data);
           setSentimentSignals(signalsRes.data);
           // Fetch new Crypto APIs
           try {
-            const cryptoRes = await axios.get("http://localhost:8000/api/crypto/treasuries");
+            const API_BASE = window.location.hostname === "localhost" ? "http://localhost:8000" : "";
+            const cryptoRes = await axios.get(`${API_BASE}/api/crypto/treasuries`);
             setCryptoTreasuries(cryptoRes.data);
           } catch (cryptErr) {
             console.warn("Crypto API failed:", cryptErr);
@@ -693,7 +696,8 @@ export default function NexusTerminal() {
     fetchData();
 
     // 2. Setup WebSocket for News
-    const ws = new WebSocket("ws://localhost:8000/ws/news");
+    const WS_BASE = window.location.hostname === "localhost" ? "ws://localhost:8000" : `wss://${window.location.host}`;
+    const ws = new WebSocket(`${WS_BASE}/ws/news`);
 
     ws.onmessage = (event) => {
       try {
