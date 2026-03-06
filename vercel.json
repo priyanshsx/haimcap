@@ -6,7 +6,10 @@
         },
         {
             "src": "package.json",
-            "use": "@vercel/vite"
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
     ],
     "routes": [
@@ -17,6 +20,9 @@
         {
             "src": "/ws/(.*)",
             "dest": "backend/main.py"
+        },
+        {
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
