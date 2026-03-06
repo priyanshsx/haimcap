@@ -1,11 +1,9 @@
 import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
 from .database import engine, Base, get_db, DashboardData, SentimentScore, FundHolding, EdgarSignal, BitcoinTreasury, SessionLocal
-from .scheduler import update_all_data
 from .news_fetcher import news_fetcher
 import asyncio
 from typing import List
@@ -31,8 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Set up the scheduler
-scheduler = BackgroundScheduler()
 
 # Active WebSocket connections
 active_connections: List[WebSocket] = []
