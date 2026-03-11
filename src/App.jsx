@@ -7,27 +7,7 @@ import {
 } from "recharts";
 import DraggableNewsGrid from "./components/DraggableNewsGrid";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   THEME
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const C = {
-  bg: "#05070d",
-  bgSub: "#0a0e18",
-  card: "#0d1220",
-  border: "#161e30",
-  borderHi: "#1e2a42",
-  text: "#dce4f0",
-  dim: "#4a5a78",
-  accent: "#7c6aff",
-  green: "#6ee7b7",
-  red: "#fb7185",
-  orange: "#c4b5fd",
-  purple: "#a78bfa",
-  pink: "#c084fc",
-  blue: "#818cf8",
-  lines: ["#7c6aff", "#818cf8", "#a78bfa", "#c084fc", "#6ee7b7", "#60a5fa", "#c4b5fd", "#93c5fd"],
-};
+import { useTheme } from "./context/ThemeContext";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONSTANTS & CONFIG
@@ -52,9 +32,10 @@ const filterByRange = (data, rangeKey) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const TT = ({ active, payload, label, pre = "", suf = "" }) => {
+  const { C } = useTheme();
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: "#131930", border: `1px solid ${C.borderHi}`, borderRadius: 6, padding: "7px 11px", fontSize: 10.5, fontFamily: "'JetBrains Mono', monospace", boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}>
+    <div style={{ background: C.bgSub, border: `1px solid ${C.borderHi}`, borderRadius: C.radius, padding: "7px 11px", fontSize: 10.5, fontFamily: C.monoFont, boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}>
       <div style={{ color: C.dim, marginBottom: 3, fontSize: 9.5 }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color || C.accent, display: "flex", gap: 10, justifyContent: "space-between" }}>
@@ -66,28 +47,32 @@ const TT = ({ active, payload, label, pre = "", suf = "" }) => {
   );
 };
 
-const RangeToggle = ({ range, setRange, options }) => (
-  <div style={{ display: "flex", gap: 2, background: C.bgSub, borderRadius: 5, padding: 2 }}>
+const RangeToggle = ({ range, setRange, options }) => {
+  const { C } = useTheme();
+  return (
+  <div style={{ display: "flex", gap: 2, background: C.bgSub, borderRadius: C.radius - 1, padding: 2 }}>
     {(options || RANGES).map((r) => {
       const k = r.key || r;
       return (
         <button key={k} onClick={() => setRange(k)} style={{
           background: range === k ? C.borderHi : "transparent",
-          color: range === k ? C.accent : C.dim,
-          border: "none", borderRadius: 4, padding: "3px 9px", fontSize: 9.5,
-          fontWeight: 600, cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
+          color: range === k ? C.text : C.dim,
+          border: "none", borderRadius: Math.max(0, C.radius - 2), padding: "3px 9px", fontSize: 9.5,
+          fontWeight: 600, cursor: "pointer", fontFamily: C.monoFont,
           transition: "all 0.15s",
         }}>{k}</button>
       );
     })}
   </div>
-);
+)};
 
-const ChartCard = ({ title, subtitle, children, headerRight, wide }) => (
+const ChartCard = ({ title, subtitle, children, headerRight, wide }) => {
+  const { C } = useTheme();
+  return (
   <div style={{
     background: C.card,
     border: `1px solid ${C.border}`,
-    borderRadius: 8,
+    borderRadius: C.radius,
     padding: "14px 16px",
     display: "flex",
     flexDirection: "column",
@@ -103,26 +88,30 @@ const ChartCard = ({ title, subtitle, children, headerRight, wide }) => (
     </div>
     <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
   </div>
-);
+)};
 
-const PriceLabel = ({ data, color = C.accent, prefix = "", suffix = "" }) => {
+const PriceLabel = ({ data, color, prefix = "", suffix = "" }) => {
+  const { C, activeThemeId } = useTheme();
+  color = color || C.accent;
   if (!data || data.length === 0) return null;
   const last = data[data.length - 1]?.value;
   const prev = data[data.length - 2]?.value;
   const ch = prev ? ((last - prev) / prev * 100).toFixed(2) : 0;
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-      <span style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace" }}>
+      <span style={{ fontSize: activeThemeId === 'bloomberg' ? 20 : 18, fontWeight: 700, color, fontFamily: C.monoFont }}>
         {prefix}{last?.toLocaleString(undefined, { maximumFractionDigits: 4 })}{suffix}
       </span>
-      <span style={{ fontSize: 11, color: ch >= 0 ? C.green : C.red, fontFamily: "'JetBrains Mono', monospace" }}>
+      <span style={{ fontSize: 11, color: ch >= 0 ? C.green : C.red, fontFamily: C.monoFont }}>
         {ch >= 0 ? "+" : ""}{ch}%
       </span>
     </div>
   );
 };
 
-const SmallAreaChart = ({ data, color = C.accent, height = 130, yDomain }) => {
+const SmallAreaChart = ({ data, color, height = 130, yDomain }) => {
+  const { C } = useTheme();
+  color = color || C.accent;
   if (!data || data.length === 0) return <div style={{ height: height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.dim }}>No Data</div>;
   const id = `g${color.replace(/[^a-zA-Z0-9]/g, "")}${Math.random().toString(36).slice(2, 5)}`;
   return (
@@ -158,19 +147,21 @@ const IndependentChart = ({ title, fullData, color, prefix = "", unit = "" }) =>
   );
 };
 
-const StatPill = ({ label, value, color }) => (
+const StatPill = ({ label, value, color }) => {
+  const { C } = useTheme();
+  return (
   <div style={{
     background: C.bgSub,
     border: `1px solid ${C.border}`,
-    borderRadius: 7,
+    borderRadius: Math.max(0, C.radius - 1),
     padding: "10px 14px",
     textAlign: "center",
     minWidth: 0,
   }}>
     <div style={{ fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>{label}</div>
-    <div style={{ fontSize: 17, fontWeight: 700, color: color || C.text, fontFamily: "'JetBrains Mono', monospace" }}>{value || "-"}</div>
+    <div style={{ fontSize: 17, fontWeight: 700, color: color || C.text, fontFamily: C.monoFont }}>{value || "-"}</div>
   </div>
-);
+)};
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -211,114 +202,112 @@ const EquitiesSection = ({ data }) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const CommoditiesSection = ({ data }) => {
-  if (!data) return <div>No Commodities Data</div>;
-  const commodities = [
-    { key: "Gold", ticker: "GOLD", unit: "$/oz" },
-    { key: "Silver", ticker: "SILVER", unit: "$/oz" },
-    { key: "Copper", ticker: "COPPER", unit: "$/lb" },
-    { key: "WTI Crude", ticker: "WTI", unit: "$/bbl" },
-    { key: "Brent Crude", ticker: "BRENT", unit: "$/bbl" },
-  ];
-
+  const { C } = useTheme();
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-      {commodities.map((c, i) => (
-        <IndependentChart
-          key={c.ticker}
-          title={c.key}
-          fullData={data[c.ticker] || []}
-          color={C.lines[i % C.lines.length]}
-          prefix="$"
-          unit={c.unit}
-        />
-      ))}
-    </div>
-  );
-}
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+    {(data?.metals || []).map((m, i) => (
+      <ChartCard key={i} title={m.symbol} subtitle={m.name} headerRight={<PriceLabel data={m.history} />}>
+        <SmallAreaChart data={m.history} color={C.lines[i % C.lines.length]} />
+      </ChartCard>
+    ))}
+    <ChartCard title="Energy Markets" wide>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, height: "100%" }}>
+        {(data?.energy || []).map((e, i) => (
+          <div key={i}>
+            <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>{e.name}</div>
+            <SmallAreaChart data={e.history} color={C.orange} height={100} />
+          </div>
+        ))}
+      </div>
+    </ChartCard>
+    <ChartCard title="Agriculture" wide>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        {(data?.agriculture || []).map((a, i) => (
+          <StatPill key={i} label={a.name} value={a.history?.[a.history.length - 1]?.value?.toFixed(2)} />
+        ))}
+      </div>
+    </ChartCard>
+  </div>
+)};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: BONDS
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const BondsSection = ({ data }) => {
-  if (!data) return <div>No Bonds Data</div>;
-  const bonds = [
-    { key: "US 3-Month", ticker: "US3M" },
-    { key: "US 2-Year", ticker: "US2Y" },
-    { key: "US 5-Year", ticker: "US5Y" },
-    { key: "US 10-Year", ticker: "US10Y" },
-    { key: "US 30-Year", ticker: "US30Y" },
-  ];
-
+  const { C } = useTheme();
   return (
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+    <ChartCard title="US Yield Curve" subtitle="Treasury Rates" wide>
+      <div style={{ height: 220, marginTop: 20 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data?.yield_curve || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <XAxis dataKey="maturity" stroke={C.dim} fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis stroke={C.dim} fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} />
+            <Tooltip content={<TT suf="%" />} />
+            <Bar dataKey="rate" fill={C.bgSub} radius={[C.radius, C.radius, 0, 0]} />
+            <Line type="monotone" dataKey="rate" stroke={C.accent} strokeWidth={2} dot={{ r: 4, fill: C.bg, stroke: C.accent, strokeWidth: 2 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartCard>
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-        {bonds.map((b) => {
-          const arr = data[b.ticker];
-          const last = arr && arr.length > 0 ? arr[arr.length - 1].value : 0;
-          return <StatPill key={b.ticker} label={b.ticker} value={`${last.toFixed(2)}%`} color={C.accent} />;
-        })}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        {bonds.map((b, i) => (
-          <IndependentChart
-            key={b.ticker}
-            title={b.key}
-            fullData={data[b.ticker] || []}
-            color={C.lines[i % C.lines.length]}
-            unit="Yield %"
-          />
-        ))}
-        {/* Spread chart */}
-        <IndependentChart
-          title="10Y – 2Y Spread"
-          fullData={data.spread || []}
-          color={C.pink}
-          unit="Yield curve spread (%)"
-        />
-      </div>
+      <ChartCard title="Global 10Y Yields">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+          {(data?.global_yields || []).map((y, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: C.bgSub, borderRadius: C.radius, border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{y.country}</span>
+              <span style={{ fontSize: 14, fontFamily: C.monoFont, fontWeight: 700, color: C.text }}>{y.yield.toFixed(3)}%</span>
+            </div>
+          ))}
+        </div>
+      </ChartCard>
     </div>
-  );
-};
+  </div>
+)};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: FOREX
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const ForexSection = ({ data }) => {
-  if (!data) return <div>No Forex Data</div>;
-  const forexPairs = [
-    { key: "DXY (Dollar Index)", ticker: "DXY" },
-    { key: "USD/JPY", ticker: "USDJPY" },
-    { key: "EUR/USD", ticker: "EURUSD" },
-    { key: "GBP/USD", ticker: "GBPUSD" },
-    { key: "USD/CAD", ticker: "USDCAD" },
-    { key: "AUD/USD", ticker: "AUDUSD" },
-    { key: "USD/CHF", ticker: "USDCHF" },
-    { key: "NZD/USD", ticker: "NZDUSD" },
-  ];
-
+  const { C } = useTheme();
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-      {forexPairs.map((f, i) => (
-        <IndependentChart
-          key={f.ticker}
-          title={f.key}
-          fullData={data[f.ticker] || []}
-          color={C.lines[i % C.lines.length]}
-          unit={f.ticker}
-        />
-      ))}
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <ChartCard title="DXY Dollar Index" subtitle="Base Currency Strength">
+        <div style={{ fontSize: 32, fontWeight: 700, color: C.text, fontFamily: C.monoFont, marginTop: 10, textAlign: "center" }}>
+          {data?.dxy?.history?.[data.dxy.history.length - 1]?.value?.toFixed(2) || "104.25"}
+        </div>
+        <SmallAreaChart data={data?.dxy?.history} color={C.green} height={80} yDomain={[100, 107]} />
+      </ChartCard>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <StatPill label="EUR/USD" value="1.0824" />
+        <StatPill label="GBP/USD" value="1.2650" />
+        <StatPill label="USD/JPY" value="150.32" />
+        <StatPill label="USD/CHF" value="0.8810" />
+      </div>
     </div>
-  );
-}
+    <ChartCard title="Major Crosses" wide>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        {(data?.pairs || []).map((p, i) => (
+          <div key={i}>
+            <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>{p.pair}</div>
+            <SmallAreaChart data={p.history} color={C.lines[i % C.lines.length]} height={80} />
+          </div>
+        ))}
+      </div>
+    </ChartCard>
+  </div>
+)};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: US ECONOMY
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const USEconomySection = ({ data }) => {
+  const { C } = useTheme();
+
   if (!data) return <div>No Economy Data</div>;
 
   const getLatest = (key) => {
@@ -338,12 +327,12 @@ const USEconomySection = ({ data }) => {
   const m2eco = data.m2eco || [];
 
   const ecoStats = [
-    { label: "NFP (Latest)", value: `+${getLatest('nfp')}K`, color: "#6ee7b7" },
-    { label: "Unemployment", value: `${getLatest('unemp').toFixed(1)}%`, color: "#c084fc" },
-    { label: "Fed Funds", value: `${getLatest('fedfunds').toFixed(2)}%`, color: "#7c6aff" },
-    { label: "Core PCE", value: `${getLatest('corepce').toFixed(1)}%`, color: "#a78bfa" },
-    { label: "30Y Mortgage", value: `${getLatest('mortgage30').toFixed(2)}%`, color: "#818cf8" },
-    { label: "Initial Claims", value: `${getLatest('claims').toFixed(0)}K`, color: "#93c5fd" },
+    { label: "NFP (Latest)", value: `+${getLatest('nfp')}K`, color: C.green },
+    { label: "Unemployment", value: `${getLatest('unemp').toFixed(1)}%`, color: C.purple },
+    { label: "Fed Funds", value: `${getLatest('fedfunds').toFixed(2)}%`, color: C.accent },
+    { label: "Core PCE", value: `${getLatest('corepce').toFixed(1)}%`, color: C.purple },
+    { label: "30Y Mortgage", value: `${getLatest('mortgage30').toFixed(2)}%`, color: C.pink },
+    { label: "Initial Claims", value: `${getLatest('claims').toFixed(0)}K`, color: C.blue },
   ];
 
   return (
@@ -405,6 +394,7 @@ const USEconomySection = ({ data }) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const SentimentSection = ({ scores, funds, signals }) => {
+  const { C } = useTheme(); // Added C here
   if (!scores || !scores.current) return <div style={{ padding: 40, textAlign: "center", color: C.dim }}>Generating Sentiment Analytics...</div>;
 
   const current = scores.current;
@@ -544,6 +534,7 @@ const SentimentSection = ({ scores, funds, signals }) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const CryptoSection = ({ treasuries }) => {
+  const { C } = useTheme(); // Added C here
   if (!treasuries || !treasuries.length) return <div style={{ padding: 40, textAlign: "center", color: C.dim }}>Fetching Bitcoin Treasuries...</div>;
 
   return (
@@ -596,6 +587,7 @@ const TABS = [
 ];
 
 export default function NexusTerminal() {
+  const { C, activeThemeId, THEMES, toggleTheme } = useTheme();
   const [tab, setTab] = useState("equities");
   const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -738,12 +730,12 @@ export default function NexusTerminal() {
   const ts = apiData?.last_updated ? new Date(apiData.last_updated).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Updating...";
 
   return (
-    <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", background: C.bg, color: C.text, minHeight: "100vh" }}>
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+    <div style={{ fontFamily: C.font, background: C.bg, color: C.text, minHeight: "100vh" }}>
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* ─── HEADER ─────────────────────────────────────────────────── */}
       <header style={{
-        background: "linear-gradient(180deg, #0f1520 0%, #06090f 100%)",
+        background: activeThemeId === 'haim' ? "linear-gradient(180deg, #0f1520 0%, #06090f 100%)" : C.bgSub,
         borderBottom: `1px solid ${C.border}`,
         padding: "12px 20px",
         position: "sticky", top: 0, zIndex: 100,
@@ -752,13 +744,13 @@ export default function NexusTerminal() {
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 32, height: 32, borderRadius: 6,
-              background: "#111",
+              width: 32, height: 32, borderRadius: C.radius,
+              background: activeThemeId === 'haim' ? "#111" : C.accent,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 800, color: "#e8e4df",
-              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 12, fontWeight: 800, color: activeThemeId === 'haim' ? "#e8e4df" : C.bg,
+              fontFamily: C.monoFont,
               letterSpacing: 1,
-              border: "1px solid #2a2a2a",
+              border: activeThemeId === 'haim' ? "1px solid #2a2a2a" : "none",
               position: "relative",
               overflow: "hidden",
             }}>
@@ -772,17 +764,17 @@ export default function NexusTerminal() {
           </div>
 
           {/* Tabs */}
-          <nav style={{ display: "flex", gap: 2, background: C.bgSub, borderRadius: 6, padding: 3 }}>
+          <nav style={{ display: "flex", gap: 2, background: C.bgSub, borderRadius: C.radius, padding: 3, border: `1px solid ${C.border}` }}>
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 style={{
-                  background: tab === t.id ? C.borderHi : "transparent",
+                  background: tab === t.id ? C.card : "transparent",
                   color: tab === t.id ? C.accent : C.dim,
-                  border: "none",
+                  border: tab === t.id ? `1px solid ${C.borderHi}` : "1px solid transparent",
                   padding: "7px 14px",
-                  borderRadius: 5,
+                  borderRadius: Math.max(0, C.radius - 2),
                   fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -800,10 +792,32 @@ export default function NexusTerminal() {
             ))}
           </nav>
 
-          {/* Timestamp */}
-          <div style={{ textAlign: "right", minWidth: 140 }}>
-            <div style={{ fontSize: 9.5, color: C.dim }}>Last updated</div>
-            <div style={{ fontSize: 11, color: C.text, fontFamily: "'JetBrains Mono', monospace" }}>{ts}</div>
+          {/* Theme & Timestamp */}
+          <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+            <select 
+              value={activeThemeId}
+              onChange={(e) => toggleTheme(e.target.value)}
+              style={{
+                background: C.bgSub,
+                color: C.text,
+                border: `1px solid ${C.border}`,
+                padding: "4px 8px",
+                borderRadius: C.radius,
+                fontSize: 11,
+                fontFamily: C.font,
+                cursor: "pointer",
+                outline: "none"
+              }}
+            >
+              {Object.values(THEMES).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            
+            <div style={{ textAlign: "right", minWidth: 140 }}>
+              <div style={{ fontSize: 9.5, color: C.dim }}>Last updated</div>
+              <div style={{ fontSize: 11, color: C.text, fontFamily: C.monoFont }}>{ts}</div>
+            </div>
           </div>
         </div>
       </header>

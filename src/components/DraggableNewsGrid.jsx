@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-
-const C = {
-  bgSub: "#0a0e18",
-  card: "#0d1220",
-  border: "#161e30",
-  borderHi: "#1e2a42",
-  text: "#dce4f0",
-  dim: "#4a5a78",
-  accent: "#7c6aff",
-};
+import { useTheme } from '../context/ThemeContext';
 
 const CATEGORIES = ["Geopolitics", "Economy", "Commodities", "Equities", "Crypto", "Generic"];
 
 export default function DraggableNewsGrid({ newsData }) {
+  const { C, activeThemeId } = useTheme();
+  
   // 1. Initialize layout from local storage or default
   const [layout, setLayout] = useState(() => {
     const saved = localStorage.getItem("newsDashboardLayout");
