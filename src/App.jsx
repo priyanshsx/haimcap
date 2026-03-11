@@ -204,32 +204,30 @@ const EquitiesSection = ({ data }) => {
 
 const CommoditiesSection = ({ data }) => {
   const { C } = useTheme();
+  if (!data) return <div>No Commodities Data</div>;
+  const commodities = [
+    { key: "Gold", ticker: "GOLD", unit: "$/oz" },
+    { key: "Silver", ticker: "SILVER", unit: "$/oz" },
+    { key: "Copper", ticker: "COPPER", unit: "$/lb" },
+    { key: "WTI Crude", ticker: "WTI", unit: "$/bbl" },
+    { key: "Brent Crude", ticker: "BRENT", unit: "$/bbl" },
+  ];
+
   return (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-    {(data?.metals || []).map((m, i) => (
-      <ChartCard key={i} title={m.symbol} subtitle={m.name} headerRight={<PriceLabel data={m.history} />}>
-        <SmallAreaChart data={m.history} color={C.lines[i % C.lines.length]} />
-      </ChartCard>
-    ))}
-    <ChartCard title="Energy Markets" wide>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, height: "100%" }}>
-        {(data?.energy || []).map((e, i) => (
-          <div key={i}>
-            <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>{e.name}</div>
-            <SmallAreaChart data={e.history} color={C.orange} height={100} />
-          </div>
-        ))}
-      </div>
-    </ChartCard>
-    <ChartCard title="Agriculture" wide>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-        {(data?.agriculture || []).map((a, i) => (
-          <StatPill key={i} label={a.name} value={a.history?.[a.history.length - 1]?.value?.toFixed(2)} />
-        ))}
-      </div>
-    </ChartCard>
-  </div>
-)};
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      {commodities.map((c, i) => (
+        <IndependentChart
+          key={c.ticker}
+          title={c.key}
+          fullData={data[c.ticker] || []}
+          color={C.lines[i % C.lines.length]}
+          prefix="$"
+          unit={c.unit}
+        />
+      ))}
+    </div>
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: BONDS
@@ -237,35 +235,46 @@ const CommoditiesSection = ({ data }) => {
 
 const BondsSection = ({ data }) => {
   const { C } = useTheme();
+  if (!data) return <div>No Bonds Data</div>;
+  const bonds = [
+    { key: "US 3-Month", ticker: "US3M" },
+    { key: "US 2-Year", ticker: "US2Y" },
+    { key: "US 5-Year", ticker: "US5Y" },
+    { key: "US 10-Year", ticker: "US10Y" },
+    { key: "US 30-Year", ticker: "US30Y" },
+  ];
+
   return (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-    <ChartCard title="US Yield Curve" subtitle="Treasury Rates" wide>
-      <div style={{ height: 220, marginTop: 20 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data?.yield_curve || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <XAxis dataKey="maturity" stroke={C.dim} fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis stroke={C.dim} fontSize={10} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} />
-            <Tooltip content={<TT suf="%" />} />
-            <Bar dataKey="rate" fill={C.bgSub} radius={[C.radius, C.radius, 0, 0]} />
-            <Line type="monotone" dataKey="rate" stroke={C.accent} strokeWidth={2} dot={{ r: 4, fill: C.bg, stroke: C.accent, strokeWidth: 2 }} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </ChartCard>
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <ChartCard title="Global 10Y Yields">
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-          {(data?.global_yields || []).map((y, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: C.bgSub, borderRadius: C.radius, border: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{y.country}</span>
-              <span style={{ fontSize: 14, fontFamily: C.monoFont, fontWeight: 700, color: C.text }}>{y.yield.toFixed(3)}%</span>
-            </div>
-          ))}
-        </div>
-      </ChartCard>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+        {bonds.map((b) => {
+          const arr = data[b.ticker];
+          const last = arr && arr.length > 0 ? arr[arr.length - 1].value : 0;
+          return <StatPill key={b.ticker} label={b.ticker} value={`${last.toFixed(2)}%`} color={C.accent} />;
+        })}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {bonds.map((b, i) => (
+          <IndependentChart
+            key={b.ticker}
+            title={b.key}
+            fullData={data[b.ticker] || []}
+            color={C.lines[i % C.lines.length]}
+            unit="Yield %"
+          />
+        ))}
+        {/* Spread chart */}
+        <IndependentChart
+          title="10Y – 2Y Spread"
+          fullData={data.spread || []}
+          color={C.pink}
+          unit="Yield curve spread (%)"
+        />
+      </div>
     </div>
-  </div>
-)};
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: FOREX
@@ -273,34 +282,32 @@ const BondsSection = ({ data }) => {
 
 const ForexSection = ({ data }) => {
   const { C } = useTheme();
+  if (!data) return <div>No Forex Data</div>;
+  const forexPairs = [
+    { key: "DXY (Dollar Index)", ticker: "DXY" },
+    { key: "USD/JPY", ticker: "USDJPY" },
+    { key: "EUR/USD", ticker: "EURUSD" },
+    { key: "GBP/USD", ticker: "GBPUSD" },
+    { key: "USD/CAD", ticker: "USDCAD" },
+    { key: "AUD/USD", ticker: "AUDUSD" },
+    { key: "USD/CHF", ticker: "USDCHF" },
+    { key: "NZD/USD", ticker: "NZDUSD" },
+  ];
+
   return (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <ChartCard title="DXY Dollar Index" subtitle="Base Currency Strength">
-        <div style={{ fontSize: 32, fontWeight: 700, color: C.text, fontFamily: C.monoFont, marginTop: 10, textAlign: "center" }}>
-          {data?.dxy?.history?.[data.dxy.history.length - 1]?.value?.toFixed(2) || "104.25"}
-        </div>
-        <SmallAreaChart data={data?.dxy?.history} color={C.green} height={80} yDomain={[100, 107]} />
-      </ChartCard>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <StatPill label="EUR/USD" value="1.0824" />
-        <StatPill label="GBP/USD" value="1.2650" />
-        <StatPill label="USD/JPY" value="150.32" />
-        <StatPill label="USD/CHF" value="0.8810" />
-      </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      {forexPairs.map((f, i) => (
+        <IndependentChart
+          key={f.ticker}
+          title={f.key}
+          fullData={data[f.ticker] || []}
+          color={C.lines[i % C.lines.length]}
+          unit={f.ticker}
+        />
+      ))}
     </div>
-    <ChartCard title="Major Crosses" wide>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        {(data?.pairs || []).map((p, i) => (
-          <div key={i}>
-            <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>{p.pair}</div>
-            <SmallAreaChart data={p.history} color={C.lines[i % C.lines.length]} height={80} />
-          </div>
-        ))}
-      </div>
-    </ChartCard>
-  </div>
-)};
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SECTION: US ECONOMY
