@@ -169,6 +169,7 @@ const StatPill = ({ label, value, color }) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const EquitiesSection = ({ data }) => {
+  const { C } = useTheme();
   if (!data) return <div>No Equities Data</div>;
   const tickers = [
     { key: "S&P 500", ticker: "SPX" },
