@@ -6,8 +6,10 @@ import {
   ComposedChart, ReferenceLine, Cell
 } from "recharts";
 import DraggableNewsGrid from "./components/DraggableNewsGrid";
+import AuthModal from "./components/AuthModal";
 
 import { useTheme } from "./context/ThemeContext";
+import { useAuth } from "./context/AuthContext";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONSTANTS & CONFIG
@@ -603,6 +605,8 @@ export default function NexusTerminal() {
   const [newsAlerts, setNewsAlerts] = useState([]);
   const [isNewsOpen, setIsNewsOpen] = useState(false);
   const [isNewsSettingsOpen, setIsNewsSettingsOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user, logout } = useAuth();
   
   // Breaking news customizations
   const [breakingNewsPrefs, setBreakingNewsPrefs] = useState(() => {
@@ -800,7 +804,7 @@ export default function NexusTerminal() {
             ))}
           </nav>
 
-          {/* Theme & Timestamp */}
+          {/* Theme, Auth & Timestamp */}
           <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
             <select 
               value={activeThemeId}
@@ -822,6 +826,44 @@ export default function NexusTerminal() {
               ))}
             </select>
             
+            {/* Auth UI */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, borderLeft: `1px solid ${C.border}`, paddingLeft: 20 }}>
+              {user ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 11, color: C.dim, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                    <span style={{ fontSize: 9 }}>Logged in as</span>
+                    <span style={{ color: C.text, fontWeight: 600 }}>{user.email}</span>
+                  </div>
+                  <button 
+                    onClick={() => logout()}
+                    style={{
+                      background: "transparent", color: C.dim, border: `1px solid ${C.border}`,
+                      padding: "4px 10px", borderRadius: C.radius, fontSize: 10, cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.color = C.red; e.currentTarget.style.borderColor = C.red; }}
+                    onMouseOut={(e) => { e.currentTarget.style.color = C.dim; e.currentTarget.style.borderColor = C.border; }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  style={{
+                    background: C.text, color: C.bg, border: "none",
+                    padding: "6px 14px", borderRadius: C.radius, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    transition: "transform 0.1s"
+                  }}
+                  onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.95)"}
+                  onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+
             <div style={{ textAlign: "right", minWidth: 140 }}>
               <div style={{ fontSize: 9.5, color: C.dim }}>Last updated</div>
               <div style={{ fontSize: 11, color: C.text, fontFamily: C.monoFont }}>{ts}</div>
