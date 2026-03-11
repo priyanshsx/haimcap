@@ -688,38 +688,35 @@ export default function NexusTerminal() {
         }
 
       } catch (err) {
-        setError("Failed to fetch data from backend. Make sure the FastAPI python server is running!");
+        setError("Failed to fetch data from backend. Make sure the FastAPI backend is running!");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
 
-    // 2. Setup WebSocket for News
-    const WS_BASE = window.location.hostname === "localhost" ? "ws://localhost:8000" : `wss://${window.location.host}`;
-    const ws = new WebSocket(`${WS_BASE}/ws/news`);
-
-    ws.onmessage = (event) => {
+    // 2. Setup HTTP Polling for News
+    const fetchLatestNews = async () => {
       try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "news" && msg.data && msg.data.length > 0) {
-          playNotificationSound();
+        const API_BASE = window.location.hostname === "localhost" ? "http://localhost:8000" : "";
+        const response = await axios.get(`${API_BASE}/api/data`); // We just re-fetch the dashboard data to get the latest DB news
+        if (response.data && response.data.news) {
           setNewsAlerts(prev => {
-            // Add new items to top, keep only last 10
-            const combined = [...msg.data, ...prev];
-            return combined.slice(0, 5);
-          });
-          setIsNewsOpen(true);
+            // If there's new news we play a sound, though it's tricky to check efficiently.
+            // For simplicity we'll just keep the alerts in sync.
+            return response.data.news.slice(0, 5);
+          })
         }
-      } catch (e) {
-        console.error("Failed to parse websocket message", e);
+      } catch (err) {
+        console.warn("Failed to poll news updates:", err);
       }
     };
 
-    ws.onclose = () => console.log("News WebSocket closed.");
+    // Poll every 2 minutes
+    const pollInterval = setInterval(fetchLatestNews, 120000);
 
     return () => {
-      ws.close();
+      clearInterval(pollInterval);
     };
   }, []);
 

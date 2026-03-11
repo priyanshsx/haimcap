@@ -12,13 +12,19 @@
             }
         }
     ],
+    "crons": [
+        {
+            "path": "/api/cron/update_data",
+            "schedule": "0 20 * * 1-5"
+        },
+        {
+            "path": "/api/cron/flush_news",
+            "schedule": "59 23 * * *"
+        }
+    ],
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "backend/main.py"
-        },
-        {
-            "src": "/ws/(.*)",
             "dest": "backend/main.py"
         },
         {
