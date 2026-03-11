@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   ComposedChart, ReferenceLine, Cell
 } from "recharts";
+import DraggableNewsGrid from "./components/DraggableNewsGrid";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    THEME
@@ -591,6 +592,7 @@ const TABS = [
   { id: "economy", label: "US Economy", icon: "◆" },
   { id: "sentiment", label: "Sentiment", icon: "⌖" },
   { id: "crypto", label: "Crypto", icon: "₿" },
+  { id: "news", label: "News", icon: "≣" },
 ];
 
 export default function NexusTerminal() {
@@ -600,6 +602,13 @@ export default function NexusTerminal() {
   const [error, setError] = useState(null);
   const [newsAlerts, setNewsAlerts] = useState([]);
   const [isNewsOpen, setIsNewsOpen] = useState(false);
+  const [isNewsSettingsOpen, setIsNewsSettingsOpen] = useState(false);
+  
+  // Breaking news customizations
+  const [breakingNewsPrefs, setBreakingNewsPrefs] = useState(() => {
+    const saved = localStorage.getItem("breakingNewsPrefs");
+    return saved ? JSON.parse(saved) : ["Geopolitics", "Economy", "Commodities", "Equities", "Crypto", "Generic"];
+  });
 
   // Sentiment specific states
   const [sentimentScores, setSentimentScores] = useState(null);
@@ -608,6 +617,10 @@ export default function NexusTerminal() {
 
   // Crypto treasuries specific state
   const [cryptoTreasuries, setCryptoTreasuries] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem("breakingNewsPrefs", JSON.stringify(breakingNewsPrefs));
+  }, [breakingNewsPrefs]);
 
   // Audio reference for the notification chime
   const audioContextRef = useRef(null);
@@ -659,7 +672,9 @@ export default function NexusTerminal() {
         } else {
           setApiData(response.data);
           if (response.data.news && response.data.news.length > 0) {
-            setNewsAlerts(response.data.news.slice(0, 5));
+            // Apply filtering logic here too! 
+            const filteredNews = response.data.news.filter(n => breakingNewsPrefs.includes(n.category));
+            setNewsAlerts(filteredNews.slice(0, 5));
           }
         }
 
@@ -702,9 +717,9 @@ export default function NexusTerminal() {
         const response = await axios.get(`${API_BASE}/api/data`); // We just re-fetch the dashboard data to get the latest DB news
         if (response.data && response.data.news) {
           setNewsAlerts(prev => {
-            // If there's new news we play a sound, though it's tricky to check efficiently.
-            // For simplicity we'll just keep the alerts in sync.
-            return response.data.news.slice(0, 5);
+            // Apply user preferences filter!
+            const filteredNews = response.data.news.filter(n => breakingNewsPrefs.includes(n.category));
+            return filteredNews.slice(0, 5);
           })
         }
       } catch (err) {
@@ -718,7 +733,7 @@ export default function NexusTerminal() {
     return () => {
       clearInterval(pollInterval);
     };
-  }, []);
+  }, [breakingNewsPrefs]);  // Add breakingNewsPrefs so polling is refreshed with new toggles
 
   const ts = apiData?.last_updated ? new Date(apiData.last_updated).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Updating...";
 
@@ -808,6 +823,7 @@ export default function NexusTerminal() {
             {tab === "economy" && <USEconomySection data={apiData.economy} />}
             {tab === "sentiment" && <SentimentSection scores={sentimentScores} funds={sentimentFunds} signals={sentimentSignals} />}
             {tab === "crypto" && <CryptoSection treasuries={cryptoTreasuries} />}
+            {tab === "news" && <DraggableNewsGrid newsData={apiData.news} />}
           </>
         )}
       </main>
@@ -874,42 +890,74 @@ export default function NexusTerminal() {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: newsAlerts.length > 0 ? C.red : C.dim, boxShadow: newsAlerts.length > 0 ? `0 0 8px ${C.red}` : 'none' }}></div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{newsAlerts.length > 0 ? "BREAKING NEWS" : "NEWS CENTER"}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.text, letterSpacing: 1 }}>{isNewsSettingsOpen ? "NEWS PREFERENCES" : (newsAlerts.length > 0 ? "BREAKING NEWS" : "NEWS CENTER")}</span>
               </div>
-              <button
-                onClick={() => setIsNewsOpen(false)}
-                style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: 24, lineHeight: 1, padding: "0 4px", display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}
-                title="Minimize"
-              >−</button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={() => setIsNewsSettingsOpen(!isNewsSettingsOpen)}
+                  style={{ background: "transparent", border: "none", color: isNewsSettingsOpen ? C.text : C.dim, cursor: "pointer", fontSize: 14, padding: "0 4px" }}
+                  title="Settings"
+                >⚙️</button>
+                <button
+                  onClick={() => setIsNewsOpen(false)}
+                  style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: 24, lineHeight: 1, padding: "0 4px", display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}
+                  title="Minimize"
+                >−</button>
+              </div>
             </div>
-            <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>
-              {newsAlerts.length > 0 ? newsAlerts.map(alert => (
-                <a
-                  key={alert.id}
-                  href={alert.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "block",
-                    textDecoration: "none",
-                    borderLeft: `2px solid ${C.accent}`,
-                    paddingLeft: 10,
-                    transition: "opacity 0.2s"
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 0.8}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = 1}
-                >
-                  <div style={{ fontSize: 9.5, color: C.dim, marginBottom: 4 }}>
-                    {alert.source} • {new Date(alert.published).toLocaleTimeString()}
-                  </div>
-                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>
-                    {alert.title}
-                  </div>
-                </a>
-              )) : (
-                <div style={{ fontSize: 11, color: C.dim, textAlign: "center", padding: "20px 0", fontFamily: "'JetBrains Mono', monospace" }}>Quiet. Waiting for market action...</div>
-              )}
-            </div>
+
+            {isNewsSettingsOpen ? (
+              <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>Select the categories for Breaking News.</div>
+                {["Geopolitics", "Economy", "Commodities", "Equities", "Crypto", "Generic"].map(cat => (
+                  <label key={cat} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={breakingNewsPrefs.includes(cat)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setBreakingNewsPrefs(prev => [...prev, cat]);
+                        } else {
+                          setBreakingNewsPrefs(prev => prev.filter(p => p !== cat));
+                        }
+                      }}
+                      style={{ accentColor: C.accent, cursor: "pointer", width: 14, height: 14 }}
+                    />
+                    {cat}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>
+                {newsAlerts.length > 0 ? newsAlerts.map(alert => (
+                  <a
+                    key={alert.id}
+                    href={alert.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "block",
+                      textDecoration: "none",
+                      borderLeft: `2px solid ${C.accent}`,
+                      paddingLeft: 10,
+                      transition: "opacity 0.2s"
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = 0.8}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 1}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 9.5, color: C.dim }}>{alert.source} • {new Date(alert.published).toLocaleTimeString()}</span>
+                      <span style={{ fontSize: 9.5, color: C.accent, background: `${C.accent}20`, padding: "2px 6px", borderRadius: 4 }}>{alert.category || 'News'}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>
+                      {alert.title}
+                    </div>
+                  </a>
+                )) : (
+                  <div style={{ fontSize: 11, color: C.dim, textAlign: "center", padding: "20px 0", fontFamily: "'JetBrains Mono', monospace" }}>Quiet. Waiting for market action...</div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -31,6 +31,26 @@ class NewsFetcher:
                 print(f"Error parsing date {date_str}: {e}")
         return datetime.min.replace(tzinfo=timezone.utc)
 
+    def _categorize_news(self, title: str, summary: str) -> str:
+        text = (title + " " + summary).lower()
+        
+        # Define keywords for each category
+        categories = {
+            "Geopolitics": ["israel", "gaza", "russia", "ukraine", "putin", "biden", "war", "peace", "nato", "un", "diplomat", "sanction", "military", "election", "geopolitics", "taiwan"],
+            "Economy": ["rate cut", "interest rate", "inflation", "cpi", "fed", "federal reserve", "economy", "gdp", "tariff", "tax", "powell", "central bank", "unemployment", "jobs report", "recession", "ecb", "boj", "pboc"],
+            "Commodities": ["gold", "silver", "copper", "oil", " crude", "brent", "opec", "energy", "natural gas", "agriculture", "wheat", "corn", "metal"],
+            "Crypto": ["bitcoin", "btc", "ethereum", "eth", "crypto", "blockchain", "coinbase", "binance", "sec", "etf", "solana", "xrp", "web3", "token"],
+            "Equities": ["stocks", "spx", "s&p 500", "nasdaq", "dow", "earnings", "wall street", "shares", "dividend", "ipo", "buyback", "market cap", "apple", "aapl", "microsoft", "msft", "nvidia", "nvda", "tesla", "tsla"]
+        }
+        
+        # Check against categories
+        for category, keywords in categories.items():
+            if any(kw in text for kw in keywords):
+                return category
+                
+        # If no match, return Generic
+        return "Generic"
+
     def fetch_latest_news(self) -> List[Dict[str, Any]]:
         """Parses all RSS feeds and returns a list of *new* articles."""
         new_articles = []
@@ -46,12 +66,19 @@ class NewsFetcher:
                     pub_date = self._parse_pub_date(entry)
                     
                     if pub_date > self.last_fetch_time:
+                        title = entry.get("title", "No Title")
+                        summary = entry.get("summary", "")
+                        
+                        # Apply categorization
+                        category = self._categorize_news(title, summary)
+
                         article = {
-                            "title": entry.get("title", "No Title"),
+                            "title": title,
                             "link": entry.get("link", ""),
                             "source": feed["name"],
                             "published": pub_date.isoformat(),
-                            "id": entry.get("id", entry.get("link", ""))
+                            "id": entry.get("id", entry.get("link", "")),
+                            "category": category  # New addition
                         }
                         new_articles.append(article)
                         

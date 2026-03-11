@@ -19,7 +19,7 @@
         },
         {
             "path": "/api/cron/flush_news",
-            "schedule": "59 23 * * *"
+            "schedule": "0 22 * * *"
         }
     ],
     "routes": [
