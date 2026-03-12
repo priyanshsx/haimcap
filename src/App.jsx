@@ -622,6 +622,54 @@ export default function NexusTerminal() {
   // Crypto treasuries specific state
   const [cryptoTreasuries, setCryptoTreasuries] = useState([]);
 
+  // Protected Section Wrapper Component
+  const ProtectedSection = ({ children, isLocked }) => {
+    if (!isLocked) return <>{children}</>;
+    
+    return (
+      <div style={{ position: "relative", minHeight: 400 }}>
+        <div style={{ filter: "blur(12px)", opacity: 0.4, pointerEvents: "none", userSelect: "none" }}>
+          {children}
+        </div>
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          zIndex: 10
+        }}>
+          <div style={{
+            background: C.card,
+            border: `1px solid ${C.borderHi}`,
+            borderRadius: C.radius,
+            padding: "32px 40px",
+            textAlign: "center",
+            boxShadow: `0 20px 40px rgba(0,0,0,0.6), inset 0 1px 0 ${C.borderHi}`,
+            maxWidth: 420
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>🔒</div>
+            <h3 style={{ fontSize: 18, color: C.text, fontWeight: 700, marginBottom: 8 }}>Restricted Access</h3>
+            <p style={{ fontSize: 13, color: C.dim, lineHeight: 1.5, marginBottom: 24 }}>
+              This section contains premium market data and analytics. Please sign in or create an account to view.
+            </p>
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              style={{
+                background: C.text, color: C.bg, border: "none",
+                padding: "12px 24px", borderRadius: C.radius, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                transition: "transform 0.1s", fontFamily: "inherit"
+              }}
+              onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.96)"}
+              onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+              onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+            >
+              Sign In to Unlock
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     localStorage.setItem("breakingNewsPrefs", JSON.stringify(breakingNewsPrefs));
   }, [breakingNewsPrefs]);
@@ -880,14 +928,44 @@ export default function NexusTerminal() {
           <div style={{ padding: 40, textAlign: "center", color: C.red, background: "rgba(251, 113, 133, 0.1)", borderRadius: 8 }}>{error}</div>
         ) : (
           <>
-            {tab === "equities" && <EquitiesSection data={apiData.equities} />}
-            {tab === "commodities" && <CommoditiesSection data={apiData.commodities} />}
-            {tab === "bonds" && <BondsSection data={apiData.bonds} />}
-            {tab === "forex" && <ForexSection data={apiData.forex} />}
-            {tab === "economy" && <USEconomySection data={apiData.economy} />}
-            {tab === "sentiment" && <SentimentSection scores={sentimentScores} funds={sentimentFunds} signals={sentimentSignals} />}
-            {tab === "crypto" && <CryptoSection treasuries={cryptoTreasuries} />}
-            {tab === "news" && <DraggableNewsGrid newsData={apiData.news} />}
+            {tab === "equities" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {!user && (
+                  <div style={{
+                     background: `linear-gradient(90deg, ${C.accent}20, ${C.card})`,
+                     border: `1px solid ${C.accent}60`,
+                     borderRadius: C.radius,
+                     padding: "16px 24px",
+                     display: "flex",
+                     alignItems: "center",
+                     justifyContent: "space-between"
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>Unlock Full Terminal Access</div>
+                      <div style={{ fontSize: 12, color: C.dim }}>Sign up for a free account to access Commodities, Bonds, Sentiment Data, and Breaking News.</div>
+                    </div>
+                    <button 
+                      onClick={() => setIsAuthModalOpen(true)}
+                      style={{
+                        background: C.accent, color: C.bg, border: "none",
+                        padding: "10px 20px", borderRadius: C.radius, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      Create Free Account
+                    </button>
+                  </div>
+                )}
+                <EquitiesSection data={apiData.equities} />
+              </div>
+            )}
+            {tab === "commodities" && <ProtectedSection isLocked={!user}><CommoditiesSection data={apiData.commodities} /></ProtectedSection>}
+            {tab === "bonds" && <ProtectedSection isLocked={!user}><BondsSection data={apiData.bonds} /></ProtectedSection>}
+            {tab === "forex" && <ProtectedSection isLocked={!user}><ForexSection data={apiData.forex} /></ProtectedSection>}
+            {tab === "economy" && <ProtectedSection isLocked={!user}><USEconomySection data={apiData.economy} /></ProtectedSection>}
+            {tab === "sentiment" && <ProtectedSection isLocked={!user}><SentimentSection scores={sentimentScores} funds={sentimentFunds} signals={sentimentSignals} /></ProtectedSection>}
+            {tab === "crypto" && <ProtectedSection isLocked={!user}><CryptoSection treasuries={cryptoTreasuries} /></ProtectedSection>}
+            {tab === "news" && <ProtectedSection isLocked={!user}><DraggableNewsGrid newsData={apiData.news} /></ProtectedSection>}
           </>
         )}
       </main>
@@ -1025,6 +1103,8 @@ export default function NexusTerminal() {
           </div>
         )}
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
